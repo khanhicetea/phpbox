@@ -61,3 +61,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# MySQL Tools
+www/default/adminer/*
+www/default/phpmyadmin/*

@@ -4,6 +4,7 @@
 MIRROR_COUNTRY_CODE='vn'
 TIMEZONE="Asia/Ho_Chi_Minh"
 MYSQL_PASSWORD=passwd
+MYSQL_ADMIN_TOOL="adminer"
 PHP_VERSION=5 # PHP7 is not supported yet
 PHP_DISPLAY_ERROR="On"
 PHP_UPLOAD_MAX_SIZE="64M"
@@ -1042,7 +1043,15 @@ curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 
 # Install Adminer
-mkdir /vagrant/www/default/adminer
-wget https://www.adminer.org/latest-mysql-en.php -O /vagrant/www/default/adminer/index.php
+if [ "$MYSQL_ADMIN_TOOL" == "adminer" ]; then
+  mkdir /vagrant/www/default/adminer
+  wget https://www.adminer.org/latest-mysql-en.php -O /vagrant/www/default/adminer/index.php
+else
+  wget https://files.phpmyadmin.net/phpMyAdmin/4.5.2/phpMyAdmin-4.5.2-english.tar.gz -O phpmyadmin.tar.gz
+  tar -xf phpmyadmin.tar.gz
+  rm -rf phpmyadmin.tar.gz
+  mv phpMyAdmin-4.5.2-english /vagrant/www/default/phpmyadmin
+  cp /vagrant/www/default/phpmyadmin/config.sample.inc.php /vagrant/www/default/phpmyadmin/config.inc.php
+fi
 
 exit 0
