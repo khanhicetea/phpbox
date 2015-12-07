@@ -5,7 +5,7 @@ MIRROR_COUNTRY_CODE='vn'
 TIMEZONE="Asia/Ho_Chi_Minh"
 MYSQL_PASSWORD=passwd
 MYSQL_ADMIN_TOOL="adminer"
-PHP_VERSION=5 # PHP7 is not supported yet
+PHP_VERSION=7
 PHP_DISPLAY_ERROR="On"
 PHP_UPLOAD_MAX_SIZE="64M"
 PHP_POST_MAX_SIZE="70M"
@@ -982,9 +982,6 @@ apt-mirror-pick "$MIRROR_COUNTRY_CODE"
 apt-packages-ppa 'rwky/redis'
 if [ "$PHP_VERSION" -eq 5 ]; then
   apt-packages-ppa 'ondrej/php5-5.6'
-else
-  apt-packages-purge 'php5*'
-  apt-packages-ppa 'ondrej/php-7.0'
 fi
 
 # Install NodeJS based on NodeSource (This command will run apt-get update)
@@ -1016,10 +1013,116 @@ if [ "$PHP_VERSION" -eq 5 ]; then
     php5-curl php5-dev php5-xsl php5-intl php5-gd php5-mysqlnd \
     php5-readline php5-xmlrpc php5-imap php5-memcached \
     php5-mcrypt php5-redis php5-xdebug
-  apache-modules-enable php5
+  
+  # Apache web service.
+  apache-modules-enable php5 actions rewrite
+  apache-sites-disable default-ssl
+  
+  sudo sed -i 's#www-data#vagrant#' /etc/apache2/envvars
+  sudo sed -i 's#Directory /var/www/#Directory /vagrant/www/#' /etc/apache2/apache2.conf
+  sudo sed -i 's#DocumentRoot /var/www/html#DocumentRoot /vagrant/www/default#' /etc/apache2/sites-enabled/000-default.conf
+  sudo ln -s /vagrant/conf/vhosts_apache.conf /etc/apache2/sites-enabled/vhosts.conf
+  apache-restart
 else
-  apt-packages-install php7.0
-  apache-modules-enable php7.0
+  apt-packages-install ca-certificates \
+    curl \
+    build-essential \
+    pkg-config \
+    git-core \
+    autoconf \
+    bison \
+    libxml2-dev \
+    libbz2-dev \
+    libmcrypt-dev \
+    libicu-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libltdl-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libpspell-dev \
+    libreadline-dev \
+    nginx
+    
+  sudo mkdir /usr/local/php7
+  sudo mkdir /etc/php7
+  cd /tmp
+  wget http://php.net/get/php-7.0.0.tar.gz/from/this/mirror -O php.tar.gz
+  tar -xf php.tar.gz
+  cd /tmp/php-7.0.0
+  ./buildconf --force
+  CONFIGURE_STRING="--prefix=/usr/local/php7 \
+                  --sysconfdir=/etc/php7
+                  --with-config-file-scan-dir=/etc/php7/conf.d \
+                  --enable-bcmath \
+                  --with-bz2 \
+                  --enable-calendar \
+                  --enable-intl \
+                  --enable-exif \
+                  --enable-dba \
+                  --enable-phar \
+                  --enable-mbregex \
+                  --enable-ftp \
+                  --with-gettext \
+                  --with-gd \
+                  --with-jpeg-dir \
+                  --enable-mbstring \
+                  --with-mcrypt \
+                  --with-mhash \
+                  --enable-mysqlnd \
+                  --with-mysql=mysqlnd \
+                  --with-mysql-sock=/var/run/mysqld/mysqld.sock \
+                  --with-mysqli=mysqlnd \
+                  --with-pdo-mysql=mysqlnd \
+                  --with-openssl \
+                  --enable-pcntl \
+                  --with-pspell \
+                  --enable-shmop \
+                  --enable-soap \
+                  --enable-sockets \
+                  --enable-sysvmsg \
+                  --enable-sysvsem \
+                  --enable-sysvshm \
+                  --with-jpeg-dir=/usr \
+                  --with-png-dir=shared,/usr \
+                  --with-openssl \
+                  --with-mhash \
+                  --enable-wddx \
+                  --with-zlib \
+                  --enable-zip \
+                  --with-readline \
+                  --with-curl \
+                  --enable-fpm \
+                  --with-fpm-user=vagrant \
+                  --with-fpm-group=vagrant"
+  ./configure $CONFIGURE_STRING
+  make
+  sudo make install
+  sudo rm -rf /usr/bin/php && sudo ln -s /usr/local/php7/bin/php /usr/bin/php
+  
+  # Config PHP-FPM
+  sudo mkdir -p /etc/php7/conf.d/php-fpm.d
+  sudo ln -s /usr/local/php7/sbin/php-fpm /usr/local/php7/sbin/php7-fpm
+  sudo cp /tmp/php-7.0.0/php.ini-development /etc/php7/php.ini
+  sudo ln -s /vagrant/conf/www.conf /etc/php7/php-fpm.d/www.conf
+  sudo ln -s /vagrant/conf/php-fpm.conf /etc/php7/php-fpm.conf
+  sudo ln -s /vagrant/conf/modules.ini /etc/php7/conf.d/modules.ini
+  sudo cp /vagrant/scripts/php7/php7-fpm.init /etc/init.d/php7-fpm
+  sudo cp /vagrant/scripts/php7/php7-fpm.conf /etc/init/php7-fpm.conf
+  sudo cp /vagrant/scripts/php7/php7-fpm-checkconf /usr/local/php7/php7-fpm-checkconf
+  
+  sudo chmod +x /etc/init.d/php7-fpm
+  sudo chmod +x /usr/local/php7/php7-fpm-checkconf
+  sudo update-rc.d php7-fpm defaults
+  system-service php7-fpm restart
+  
+  # Config NGINX
+  sudo rm -rf /etc/nginx/sites-enabled/default
+  sudo cp /vagrant/conf/nginx_default /etc/nginx/sites-available/default
+  sudo cp /vagrant/conf/vhosts_nginx /etc/nginx/sites-available/vhosts_nginx
+  sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  sudo ln -s /etc/nginx/sites-available/vhosts_nginx /etc/nginx/sites-enabled/vhosts_nginx
+  system-service nginx restart
 fi
 
 php-settings-update 'date.timezone' "$TIMEZONE"
@@ -1027,16 +1130,6 @@ php-settings-update 'display_errors' "$PHP_DISPLAY_ERROR"
 php-settings-update 'upload_max_filesize' "$PHP_UPLOAD_MAX_SIZE"
 php-settings-update 'post_max_size' "$PHP_POST_MAX_SIZE"
 php-settings-update 'session.save_path' "$PHP_SESSION_SAVE_PATH"
-
-# Apache web service.
-apache-modules-enable actions rewrite
-apache-sites-disable default-ssl
-
-sudo sed -i 's#www-data#vagrant#' /etc/apache2/envvars
-sudo sed -i 's#Directory /var/www/#Directory /vagrant/www/#' /etc/apache2/apache2.conf
-sudo sed -i 's#DocumentRoot /var/www/html#DocumentRoot /vagrant/www/default#' /etc/apache2/sites-enabled/000-default.conf
-sudo ln -s /vagrant/conf/vhosts.conf /etc/apache2/sites-enabled/vhosts.conf
-apache-restart
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
