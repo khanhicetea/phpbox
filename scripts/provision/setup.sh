@@ -1164,7 +1164,7 @@ if [ "$INSTALL_DOCKER" -eq 1 ]; then
   apt-packages-purge 'lxc-docker'
   sudo apt-get install -y linux-image-extra-$(uname -r)
   apt-packages-install docker-engine
-  system-service docker start; true
+  system-service docker restart; true
   sudo usermod -aG docker vagrant
   sudo sed -i 's#DEFAULT_FORWARD_POLICY="DROP"#DEFAULT_FORWARD_POLICY="ACCEPT"#' /etc/default/ufw
   sudo ufw reload; true
