@@ -1124,9 +1124,7 @@ else
   # Config NGINX
   sudo rm -rf /etc/nginx/sites-enabled/default
   sudo cp /vagrant/conf/nginx_default /etc/nginx/sites-available/default
-  sudo cp /vagrant/conf/vhosts_nginx /etc/nginx/sites-available/vhosts_nginx
   sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-  sudo ln -s /etc/nginx/sites-available/vhosts_nginx /etc/nginx/sites-enabled/vhosts_nginx
 fi
 
 # PHP Settings

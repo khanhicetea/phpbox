@@ -23,3 +23,5 @@ server {
 		deny all;
 	}
 }
+
+include /vagrant/conf/vhosts_nginx;
