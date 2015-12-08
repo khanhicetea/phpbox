@@ -10,6 +10,7 @@ PHP_DISPLAY_ERROR="On"
 PHP_UPLOAD_MAX_SIZE="64M"
 PHP_POST_MAX_SIZE="70M"
 PHP_SESSION_SAVE_PATH="/tmp"
+INSTALL_DOCKER=1
 # END : User Settings
 
 
@@ -984,6 +985,11 @@ if [ "$PHP_VERSION" -eq 5 ]; then
   apt-packages-ppa 'ondrej/php5-5.6'
 fi
 
+if [ "$INSTALL_DOCKER" -eq 1 ]; then
+  sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+  echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+fi
+
 # Install NodeJS based on NodeSource (This command will run apt-get update)
 curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
 apt-packages-install nodejs
@@ -1022,7 +1028,6 @@ if [ "$PHP_VERSION" -eq 5 ]; then
   sudo sed -i 's#Directory /var/www/#Directory /vagrant/www/#' /etc/apache2/apache2.conf
   sudo sed -i 's#DocumentRoot /var/www/html#DocumentRoot /vagrant/www/default#' /etc/apache2/sites-enabled/000-default.conf
   sudo ln -s /vagrant/conf/vhosts_apache.conf /etc/apache2/sites-enabled/vhosts.conf
-  apache-restart
 else
   apt-packages-install ca-certificates \
     curl \
@@ -1122,29 +1127,48 @@ else
   sudo cp /vagrant/conf/vhosts_nginx /etc/nginx/sites-available/vhosts_nginx
   sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
   sudo ln -s /etc/nginx/sites-available/vhosts_nginx /etc/nginx/sites-enabled/vhosts_nginx
-  system-service nginx restart
 fi
 
+# PHP Settings
 php-settings-update 'date.timezone' "$TIMEZONE"
 php-settings-update 'display_errors' "$PHP_DISPLAY_ERROR"
 php-settings-update 'upload_max_filesize' "$PHP_UPLOAD_MAX_SIZE"
 php-settings-update 'post_max_size' "$PHP_POST_MAX_SIZE"
 php-settings-update 'session.save_path' "$PHP_SESSION_SAVE_PATH"
 
+if [ "$PHP_VERSION" -eq 5 ]; then
+  apache-restart
+else
+  system-service nginx restart
+fi
+
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 
-# Install Adminer
-if [ "$MYSQL_ADMIN_TOOL" == "adminer" ]; then
+# Install Adminer or phpMyAdmin
+if [ "$MYSQL_ADMIN_TOOL" == "adminer" ] && [ "$PHP_VERSION" -eq 5 ]; then
   mkdir /vagrant/www/default/adminer
+  rm -f /vagrant/www/default/adminer/index.php
   wget https://www.adminer.org/latest-mysql-en.php -O /vagrant/www/default/adminer/index.php
 else
   wget https://files.phpmyadmin.net/phpMyAdmin/4.5.2/phpMyAdmin-4.5.2-english.tar.gz -O phpmyadmin.tar.gz
   tar -xf phpmyadmin.tar.gz
-  rm -rf phpmyadmin.tar.gz
+  rm -f phpmyadmin.tar.gz
+  rm -rf /vagrant/www/default/phpmyadmin
   mv phpMyAdmin-4.5.2-english /vagrant/www/default/phpmyadmin
   cp /vagrant/www/default/phpmyadmin/config.sample.inc.php /vagrant/www/default/phpmyadmin/config.inc.php
+fi
+
+if [ "$INSTALL_DOCKER" -eq 1 ]; then
+  apt-packages-purge 'lxc-docker'
+  sudo apt-get install -y linux-image-extra-$(uname -r)
+  apt-packages-install docker-engine
+  system-service docker start; true
+  sudo usermod -aG docker vagrant
+  sudo sed -i 's#DEFAULT_FORWARD_POLICY="DROP"#DEFAULT_FORWARD_POLICY="ACCEPT"#' /etc/default/ufw
+  sudo ufw reload; true
+  sudo ufw allow 2375/tcp; true
 fi
 
 exit 0
