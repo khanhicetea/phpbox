@@ -1139,6 +1139,7 @@ php-settings-update 'session.save_path' "$PHP_SESSION_SAVE_PATH"
 if [ "$PHP_VERSION" -eq 5 ]; then
   apache-restart
 else
+  system-service php7-fpm restart
   system-service nginx restart
 fi
 
