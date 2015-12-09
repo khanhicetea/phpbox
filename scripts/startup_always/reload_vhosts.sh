@@ -8,5 +8,6 @@ else
 	sudo rm -rf /etc/nginx/sites-enabled/vhosts_nginx
 	sudo cp /vagrant/conf/vhosts_nginx /etc/nginx/sites-available/vhosts_nginx
 	sudo ln -s /etc/nginx/sites-available/vhosts_nginx /etc/nginx/sites-enabled/vhosts_nginx
+	sudo service php7-fpm restart
 	sudo service nginx restart
 fi
