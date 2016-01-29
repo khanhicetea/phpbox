@@ -1052,9 +1052,9 @@ else
   sudo mkdir /usr/local/php7
   sudo mkdir /etc/php7
   cd /tmp
-  wget http://php.net/get/php-7.0.1.tar.gz/from/this/mirror -O php.tar.gz
+  wget http://php.net/get/php-7.0.2.tar.gz/from/this/mirror -O php.tar.gz
   tar -xf php.tar.gz
-  cd /tmp/php-7.0.1
+  cd /tmp/php-7.0.2
   ./buildconf --force
   CONFIGURE_STRING="--prefix=/usr/local/php7 \
                   --sysconfdir=/etc/php7
@@ -1108,7 +1108,7 @@ else
   # Config PHP-FPM
   sudo mkdir -p /etc/php7/conf.d/php-fpm.d
   sudo ln -s /usr/local/php7/sbin/php-fpm /usr/local/php7/sbin/php7-fpm
-  sudo cp /tmp/php-7.0.1/php.ini-development /etc/php7/php.ini
+  sudo cp /tmp/php-7.0.2/php.ini-development /etc/php7/php.ini
   sudo ln -s /vagrant/conf/www.conf /etc/php7/php-fpm.d/www.conf
   sudo ln -s /vagrant/conf/php-fpm.conf /etc/php7/php-fpm.conf
   sudo ln -s /vagrant/conf/modules.ini /etc/php7/conf.d/modules.ini
