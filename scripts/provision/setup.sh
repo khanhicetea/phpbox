@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # BEGIN : User Settings
-MIRROR_COUNTRY_CODE='vn'
+MIRROR_COUNTRY_CODE="us"
 TIMEZONE="Asia/Ho_Chi_Minh"
 MYSQL_PASSWORD=passwd
 MYSQL_ADMIN_TOOL="adminer"
@@ -10,6 +10,7 @@ PHP_DISPLAY_ERROR="On"
 PHP_UPLOAD_MAX_SIZE="64M"
 PHP_POST_MAX_SIZE="70M"
 PHP_SESSION_SAVE_PATH="/tmp"
+INSTALL_NODEJS=0
 INSTALL_DOCKER=1
 # END : User Settings
 
@@ -990,15 +991,23 @@ if [ "$INSTALL_DOCKER" -eq 1 ]; then
   echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 fi
 
+# Add MySQL 5.7
+sudo apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 5072E1F5
+echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-5.7" | sudo tee -a /etc/apt/sources.list.d/mysql.list
+
 # Install NodeJS based on NodeSource (This command will run apt-get update)
-curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-apt-packages-install nodejs
-npm-packages-install grunt-cli
-npm-packages-install bower
-npm-packages-install gulp
+if [ "$INSTALL_NODEJS" -eq 1 ]; then
+    curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
+    apt-packages-install nodejs
+    npm-packages-install grunt-cli
+    npm-packages-install bower
+    npm-packages-install gulp
+else
+    apt-packages-update
+fi
 
 # Install system tools
-apt-packages-install zip htop vim screen redis-server beanstalkd zsh
+apt-packages-install zip htop vim screen redis-server zsh
 
 # Install git
 apt-packages-install git
@@ -1007,9 +1016,15 @@ git config --global color.diff auto
 git config --global color.status auto
 
 # Install MySQL
-apt-packages-install mysql-server-5.6
-mysql-remote-access-allow
-mysqladmin -u root password "$MYSQL_PASSWORD"
+export DEBIAN_FRONTEND=noninteractive
+
+apt-packages-update
+
+debconf-set-selections <<< "mysql-community-server mysql-community-server/data-dir select ''"
+debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password $MYSQL_PASSWORD"
+debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password $MYSQL_PASSWORD"
+apt-packages-install mysql-server
+
 mysql-restart
 
 # Install PHP
@@ -1052,9 +1067,9 @@ else
   sudo mkdir /usr/local/php7
   sudo mkdir /etc/php7
   cd /tmp
-  wget http://php.net/get/php-7.0.2.tar.gz/from/this/mirror -O php.tar.gz
+  wget http://php.net/get/php-7.0.3.tar.gz/from/this/mirror -O php.tar.gz
   tar -xf php.tar.gz
-  cd /tmp/php-7.0.2
+  cd /tmp/php-7.0.3
   ./buildconf --force
   CONFIGURE_STRING="--prefix=/usr/local/php7 \
                   --sysconfdir=/etc/php7
@@ -1108,7 +1123,7 @@ else
   # Config PHP-FPM
   sudo mkdir -p /etc/php7/conf.d/php-fpm.d
   sudo ln -s /usr/local/php7/sbin/php-fpm /usr/local/php7/sbin/php7-fpm
-  sudo cp /tmp/php-7.0.2/php.ini-development /etc/php7/php.ini
+  sudo cp /tmp/php-7.0.3/php.ini-development /etc/php7/php.ini
   sudo ln -s /vagrant/conf/www.conf /etc/php7/php-fpm.d/www.conf
   sudo ln -s /vagrant/conf/php-fpm.conf /etc/php7/php-fpm.conf
   sudo ln -s /vagrant/conf/modules.ini /etc/php7/conf.d/modules.ini
@@ -1144,6 +1159,7 @@ fi
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
+composer global require hirak/prestissimo
 
 # Install Adminer or phpMyAdmin
 if [ "$MYSQL_ADMIN_TOOL" == "adminer" ] && [ "$PHP_VERSION" -eq 5 ]; then
