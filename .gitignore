@@ -63,5 +63,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # MySQL Tools
-www/default/adminer/*
-www/default/phpmyadmin/*
+www/*
+!www/default/index.php
+!www/test/helloworld.php
