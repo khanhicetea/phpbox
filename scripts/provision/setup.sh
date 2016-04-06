@@ -1067,9 +1067,9 @@ else
   sudo mkdir /usr/local/php7
   sudo mkdir /etc/php7
   cd /tmp
-  wget http://php.net/get/php-7.0.3.tar.gz/from/this/mirror -O php.tar.gz
+  wget http://php.net/get/php-7.0.5.tar.gz/from/this/mirror -O php.tar.gz
   tar -xf php.tar.gz
-  cd /tmp/php-7.0.3
+  cd /tmp/php-7.0.5
   ./buildconf --force
   CONFIGURE_STRING="--prefix=/usr/local/php7 \
                   --sysconfdir=/etc/php7
@@ -1123,7 +1123,7 @@ else
   # Config PHP-FPM
   sudo mkdir -p /etc/php7/conf.d/php-fpm.d
   sudo ln -s /usr/local/php7/sbin/php-fpm /usr/local/php7/sbin/php7-fpm
-  sudo cp /tmp/php-7.0.3/php.ini-development /etc/php7/php.ini
+  sudo cp /tmp/php-7.0.5/php.ini-development /etc/php7/php.ini
   sudo ln -s /vagrant/conf/www.conf /etc/php7/php-fpm.d/www.conf
   sudo ln -s /vagrant/conf/php-fpm.conf /etc/php7/php-fpm.conf
   sudo ln -s /vagrant/conf/modules.ini /etc/php7/conf.d/modules.ini
@@ -1167,11 +1167,11 @@ if [ "$MYSQL_ADMIN_TOOL" == "adminer" ] && [ "$PHP_VERSION" -eq 5 ]; then
   rm -f /vagrant/www/default/adminer/index.php
   wget https://www.adminer.org/latest-mysql-en.php -O /vagrant/www/default/adminer/index.php
 else
-  wget https://files.phpmyadmin.net/phpMyAdmin/4.5.2/phpMyAdmin-4.5.2-english.tar.gz -O phpmyadmin.tar.gz
+  wget https://files.phpmyadmin.net/phpMyAdmin/4.6.0/phpMyAdmin-4.6.0-english.tar.gz -O phpmyadmin.tar.gz
   tar -xf phpmyadmin.tar.gz
   rm -f phpmyadmin.tar.gz
   rm -rf /vagrant/www/default/phpmyadmin
-  mv phpMyAdmin-4.5.2-english /vagrant/www/default/phpmyadmin
+  mv phpMyAdmin-4.6.0-english /vagrant/www/default/phpmyadmin
   cp /vagrant/www/default/phpmyadmin/config.sample.inc.php /vagrant/www/default/phpmyadmin/config.inc.php
 fi
 
