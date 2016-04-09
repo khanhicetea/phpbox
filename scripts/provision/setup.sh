@@ -95,6 +95,7 @@ sudo apt-get install -y --force-yes php7.0-bcmath php7.0-bz2 php7.0-cli php7.0-c
 
 sudo apt-get install -y apache2 libapache2-mod-php7.0
 sudo a2enmod php7.0
+sudo a2enmod rewrite
 
 # Apache & PHP Settings
 php-settings-update 'date.timezone' "$TIMEZONE"
